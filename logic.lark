@@ -1,0 +1,31 @@
+?start: impl
+
+?impl: or_expr
+     | or_expr IMPL impl   -> impl_chain
+
+?or_expr: and_expr
+        | or_expr OR and_expr   -> or_chain
+
+?and_expr: not_expr
+         | and_expr AND not_expr   -> and_chain
+
+?not_expr: NOT not_expr           -> not_single
+         | atom
+
+?atom: NAME                       -> var
+     | TRUE                       -> const_true
+     | FALSE                      -> const_false
+     | "(" impl ")"               -> paren
+
+
+// ----- tokens -----
+TRUE.2 : "true"i  | "⊤"
+FALSE.2: "false"i | "⊥"
+IMPL   : "->" | "=>" | "→"
+AND    : "and"i  | "&"  | "/\\" | "∧"
+OR     : "or"i   | "|"  | "\\/" | "∨"
+NOT    : "not"i  | "!"  | "¬"
+NAME   : /[A-Za-z_][A-Za-z0-9_]*/
+
+%import common.WS_INLINE
+%ignore WS_INLINE

@@ -1,0 +1,8 @@
+[project]
+name = "pc_proof"
+version = "0.1.0"
+
+dependencies = [
+  "lark>=1.2",      # or just "lark"
+  "graphviz>=0.20",
+]
