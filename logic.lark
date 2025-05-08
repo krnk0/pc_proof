@@ -22,9 +22,9 @@
 TRUE.2 : "true"i  | "⊤"
 FALSE.2: "false"i | "⊥"
 IMPL   : "->" | "=>" | "→"
-AND    : "and"i  | "&"  | "/\\" | "∧"
-OR     : "or"i   | "|"  | "\\/" | "∨"
-NOT    : "not"i  | "!"  | "¬"
+AND.2    : "and"i  | "&"  | "/\\" | "∧"
+OR.2     : "or"i   | "|"  | "\\/" | "∨"
+NOT.3    : "not"i  | "!"  | "¬"
 NAME   : /[A-Za-z_][A-Za-z0-9_]*/
 
 %import common.WS_INLINE
