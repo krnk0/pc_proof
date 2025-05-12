@@ -24,10 +24,8 @@ Expr = Var | Not | Bin
 @v_args(inline=True)
 class BuildAST(Transformer):
     # トークン
-    def NAME(self, tok):            return Var(tok.value)
-    def var(self, child):            return child
-    def TRUE(self, _):              return Var("⊤")   # constをVarで代用
-    def FALSE(self, _):             return Var("⊥")
+    def const_true(self, _):              return Var("⊤")   # constをVarで代用
+    def const_false(self, _):             return Var("⊥")
 
     # 一項 / 二項
     def not_single(self,_tok, expr):     return Not(expr)
@@ -35,7 +33,7 @@ class BuildAST(Transformer):
     def or_chain(self,  l, _tok, r):      return Bin("OR",  l, r)
     def impl_chain(self, l, _tok, r):     return Bin("IMPL", l, r)
 
-    def var(self, child):            return child
+    def var(self, tok):            return Var(tok.value)
 
     # 折り畳みルール
     def impl_single(self, expr):    return expr
