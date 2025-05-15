@@ -53,8 +53,3 @@ def parse(text: str) -> Expr:
     """
     return cast(Expr, _parser.parse(text))
 
-# ---------------- 簡易 CLI ----------------
-if __name__ == "__main__":
-    import sys, pprint
-    src = sys.argv[1] if len(sys.argv) > 1 else "not p or q -> q"
-    pprint.pp(parse(src))
