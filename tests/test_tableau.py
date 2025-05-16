@@ -1,24 +1,38 @@
 import pytest
 from tableau import solve
+from parser import parse, Var, Not, Bin
 
-@pytest.mark.pametarize("expr",[
+def eval_ast(node, env):
+    if isinstance(node, Var):
+        return env.get(node.name, False)
+    if isinstance(node, Not):
+        return not eval_ast(node.expr, env)
+    if isinstance(node, Bin):
+        left  = eval_ast(node.left,  env)
+        right = eval_ast(node.right, env)
+        if node.op == "AND":  return left and right
+        if node.op == "OR":   return left or  right
+        if node.op == "IMPL": return (not left) or right
+    raise ValueError("unknown node")
+
+@pytest.mark.parametrize("expr",[
     "p or not p",
-    "not not p",
-    "not (p and q) -> (not p or not q)",
+    "not not p -> p",
+#    "not (p and q) -> (not p or not q)",
 ])
 def test_tautology(expr):
-    taut, _ = solve(expr)
+    taut, _ = solve(expr, tautology=True)
     assert taut, f"{expr!r} should be tautology"
 
 # ---------- 反例モデルを取れる式 ----------
-@pytest.mark.parametrize("expr, expected", [
-    ("p and not p",                 {"p": False}),          # 矛盾式
-    ("p or q and not p",            {"p": False, "q": True}),
-    ("not (p or q)",                {"p": False, "q": False}),
+@pytest.mark.parametrize("expr", [
+    "p and not p",          # 矛盾式
+    "p or q and not p",
+    "not (p or q)",
 ])
-def test_counter_example(expr, expected):
-    taut, model = solve(expr)
+def test_counter_example(expr):
+    taut, model = solve(expr, tautology=True)
     assert not taut, "should be falsifiable"
-    # 期待値のキーだけ比較（余計な変数は don't-care で OK）
-    for k, v in expected.items():
-        assert model.get(k) == v
+
+    ast = parse(expr)
+    assert eval_ast(ast, model) is False

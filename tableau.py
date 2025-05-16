@@ -28,6 +28,9 @@ def decompose(node: Expr) -> Tuple[Optional[str], Optional[BranchParts]]:
             return "beta", [[Not(inner.left)], [Not(inner.right)]]
         if isinstance(inner, Bin) and inner.op == "OR":
             return "alpha", [Not(inner.left), Not(inner.right)]
+        if isinstance(inner, Bin) and inner.op == "IMPL":
+            # α: ¬(A→B)  ≡  A ∧ ¬B
+            return "alpha", [inner.left, Not(inner.right)]
     return None, None   # literal
 
 def tableau(branch):
@@ -70,15 +73,22 @@ def tableau(branch):
         
 
 
-def solve(text: str):
+def solve(text: str, *, tautology=False):
     ast = parse(text)
+    if tautology:
+        ast = Not(ast)
     status, data = tableau(Counter([ast]))
     if status == "closed":
         return True, None
     else:
         assert data is not None
         # Counter → dict 形式の反例
-        model = {v.name: not isinstance(v, Not) for v in data if is_literal(v)}
+        model = {}
+        for v in data:
+            if isinstance(v, Var):
+                model[v.name] = True
+            elif isinstance(v, Not) and isinstance(v.expr, Var):
+                model[v.expr.name] = False
         return False, model
 
 if __name__ == '__main__':
