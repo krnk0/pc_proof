@@ -1,10 +1,12 @@
 import pytest
 from tableau import solve
-from parser import parse, Var, Not, Bin
+from parser import parse, Var, Const, Not, Bin
 
 def eval_ast(node, env):
     if isinstance(node, Var):
         return env.get(node.name, False)
+    if isinstance(node, Const):
+        return node.value
     if isinstance(node, Not):
         return not eval_ast(node.expr, env)
     if isinstance(node, Bin):
@@ -18,6 +20,8 @@ def eval_ast(node, env):
 @pytest.mark.parametrize("expr",[
     "p or not p",
     "not not p -> p",
+    "⊤",
+    "not ⊥",
 #    "not (p and q) -> (not p or not q)",
 ])
 def test_tautology(expr):
@@ -29,6 +33,7 @@ def test_tautology(expr):
     "p and not p",          # 矛盾式
     "p or q and not p",
     "not (p or q)",
+    "⊥",
 ])
 def test_counter_example(expr):
     taut, model = solve(expr, tautology=True)

@@ -1,12 +1,16 @@
 from collections import Counter
 from typing import List, Tuple, Union, Optional, cast
-from parser import parse, Var, Not, Bin, Expr
+from parser import parse, Var, Const, Not, Bin, Expr
 import sys, pprint
 
 def is_literal(node):
-    return isinstance(node, Var) or (isinstance(node, Not) and isinstance(node.expr, Var))
+    return isinstance(node, (Var, Const)) or (
+        isinstance(node, Not) and isinstance(node.expr, Var)
+    )
 
 def negate(lit):
+    if isinstance(lit, Const):
+        return Const(not lit.value)
     return lit.expr if isinstance(lit, Not) else Not(lit)
 
 ExprList = List["Expr"]
@@ -34,6 +38,19 @@ def decompose(node: Expr) -> Tuple[Optional[str], Optional[BranchParts]]:
     return None, None   # literal
 
 def tableau(branch):
+    # Not(Const) を評価
+    for n in list(branch):
+        if isinstance(n, Not) and isinstance(n.expr, Const):
+            count = branch[n]
+            branch[Const(not n.expr.value)] += count
+            del branch[n]
+
+    # \⊤ は分解不要、\⊥ があれば枝は閉じる
+    if branch.get(Const(False), 0) > 0:
+        return "closed", None
+    if branch.get(Const(True), 0) > 0:
+        del branch[Const(True)]
+
     lits = [n for n in branch if is_literal(n)]
     # 矛盾してるかチェック, してれば閉じる
     if any(negate(l) in branch for l in lits):
@@ -89,6 +106,7 @@ def solve(text: str, *, tautology=False):
                 model[v.name] = True
             elif isinstance(v, Not) and isinstance(v.expr, Var):
                 model[v.expr.name] = False
+            # Const はモデルに含めない
         return False, model
 
 if __name__ == '__main__':

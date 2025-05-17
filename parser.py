@@ -7,6 +7,11 @@ from lark import Lark, Transformer, v_args
 class Var:
     name: str
 
+
+@dataclass(frozen=True)
+class Const:
+    value: bool
+
 @dataclass(frozen=True)
 class Not:
     expr: "Expr"
@@ -18,17 +23,20 @@ class Bin:
     left: "Expr"
     right: "Expr"
 
-Expr = Var | Not | Bin
+Expr = Var | Const | Not | Bin
 
 
 @v_args(inline=True)
 class BuildAST(Transformer):
     # トークン
-    def const_true(self, _):              return Var("⊤")   # constをVarで代用
-    def const_false(self, _):             return Var("⊥")
+    def const_true(self, _):              return Const(True)
+    def const_false(self, _):             return Const(False)
 
     # 一項 / 二項
-    def not_single(self,_tok, expr):     return Not(expr)
+    def not_single(self,_tok, expr):
+        if isinstance(expr, Const):
+            return Const(not expr.value)
+        return Not(expr)
     def and_chain(self, l, _tok, r):      return Bin("AND", l, r)
     def or_chain(self,  l, _tok, r):      return Bin("OR",  l, r)
     def impl_chain(self, l, _tok, r):     return Bin("IMPL", l, r)
@@ -49,7 +57,7 @@ _parser = Lark.open(
 
 def parse(text: str) -> Expr:
     """
-    文字列 `text` を解析して AST (Var / Not / Bin) を返す
+    文字列 `text` を解析して AST (Var / Const / Not / Bin) を返す
     """
     return cast(Expr, _parser.parse(text))
 

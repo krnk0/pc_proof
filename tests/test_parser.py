@@ -1,6 +1,6 @@
 import pytest
 from lark.exceptions import LarkError
-from parser import parse, Var, Not, Bin
+from parser import parse, Var, Const, Not, Bin
 
 def test_basic():
    ast = parse("not p or q") 
@@ -33,7 +33,7 @@ def test_basic():
 
     # TRUE / FALSE
     ("⊤ -> ⊥",
-        Bin("IMPL", Var("⊤"), Var("⊥"))),
+        Bin("IMPL", Const(True), Const(False))),
 ])
 def test_ok(src, expect):
     assert parse(src) == expect
