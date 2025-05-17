@@ -41,3 +41,17 @@ def test_counter_example(expr):
 
     ast = parse(expr)
     assert eval_ast(ast, model) is False
+
+
+@pytest.mark.parametrize("expr", [
+    "p and q",
+    "p -> q",
+    "p and (q or r)",
+    "p or (q and not r)",
+])
+def test_satisfiable_model(expr):
+    unsat, model = solve(expr, tautology=False)
+    assert not unsat, f"{expr!r} should be satisfiable"
+
+    ast = parse(expr)
+    assert eval_ast(ast, model) is True
