@@ -32,7 +32,7 @@ def main(argv=None):
     else:
         if args.output:
             parser.error("SVG output is only supported with the sequent method")
-        taut, model = solve(args.expr, tautology=False)
+        taut, model = solve(args.expr, tautology=True)
         if taut:
             print("Provable")
         else:
