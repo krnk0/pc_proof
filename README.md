@@ -16,8 +16,8 @@ pip install -e .
 
 ## Example
 ```python
-from sequent import prove
-from tableau import solve
+from pc_proof.sequent import prove
+from pc_proof.tableau import solve
 
 prove("p or not p")
 taut, model = solve("p and not p", tautology=True)

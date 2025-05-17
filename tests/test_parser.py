@@ -1,6 +1,6 @@
 import pytest
 from lark.exceptions import LarkError
-from parser import parse, Var, Const, Not, Bin
+from pc_proof.parser import parse, Var, Const, Not, Bin
 
 def test_basic():
    ast = parse("not p or q") 

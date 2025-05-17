@@ -1,6 +1,6 @@
 import pytest
-from tableau import solve
-from parser import parse, Var, Const, Not, Bin
+from pc_proof.tableau import solve
+from pc_proof.parser import parse, Var, Const, Not, Bin
 
 def eval_ast(node, env):
     if isinstance(node, Var):

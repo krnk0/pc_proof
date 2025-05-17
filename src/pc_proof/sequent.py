@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import List
-from parser import parse, Var, Const, Not, Bin, Expr
+from .parser import parse, Var, Const, Not, Bin, Expr
 
 
 def is_literal(node: Expr) -> bool:

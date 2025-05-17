@@ -1,6 +1,6 @@
 from collections import Counter
 from typing import List, Tuple, Union, Optional, cast
-from parser import parse, Var, Const, Not, Bin, Expr
+from .parser import parse, Var, Const, Not, Bin, Expr
 import sys, pprint
 
 def is_literal(node):

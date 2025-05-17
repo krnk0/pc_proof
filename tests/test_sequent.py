@@ -1,5 +1,5 @@
 import pytest
-from sequent import prove
+from pc_proof.sequent import prove
 
 @pytest.mark.parametrize("expr", [
     "p or not p",
