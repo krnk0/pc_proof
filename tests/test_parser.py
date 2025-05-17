@@ -34,6 +34,18 @@ def test_basic():
     # TRUE / FALSE
     ("⊤ -> ⊥",
         Bin("IMPL", Const(True), Const(False))),
+
+    # Deeply nested parentheses
+    ("((p)) -> ((q or r))",
+        Bin("IMPL", Var("p"), Bin("OR", Var("q"), Var("r")))),
+
+    # Mixed Unicode and ASCII operators
+    ("p ∧ not q",
+        Bin("AND", Var("p"), Not(Var("q")))),
+
+    # Negated constants folded to Const
+    ("not ⊤", Const(False)),
+    ("not ⊥", Const(True)),
 ])
 def test_ok(src, expect):
     assert parse(src) == expect

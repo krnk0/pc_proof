@@ -37,5 +37,11 @@ pc-proof -o proof "p or not p"  # SVG for sequent proof
 
 The `-o` option is only valid when using the sequent method.
 
+## Testing
+Run tests inside the provided virtual environment:
+```bash
+.venv/bin/python -m pytest -q
+```
+
 ## License
 MIT. See [LICENSE](LICENSE).
