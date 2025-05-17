@@ -47,9 +47,9 @@ class BuildAST(Transformer):
     def impl_single(self, expr):    return expr
     def paren(self, expr):          return expr
 
-_GRAMMER_PATH = Path(__file__).with_name("logic.lark")
+_GRAMMAR_PATH = Path(__file__).with_name("logic.lark")
 _parser = Lark.open(
-    str(_GRAMMER_PATH),
+    str(_GRAMMAR_PATH),
     parser="lalr",
     transformer=BuildAST(),
     cache=True

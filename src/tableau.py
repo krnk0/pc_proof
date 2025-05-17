@@ -1,7 +1,7 @@
 from collections import Counter
 from typing import List, Tuple, Union, Optional, cast
 from parser import parse, Var, Const, Not, Bin, Expr
-import sys, pprint
+import sys
 
 def is_literal(node):
     return isinstance(node, (Var, Const)) or (
@@ -14,7 +14,7 @@ def negate(lit):
     return lit.expr if isinstance(lit, Not) else Not(lit)
 
 ExprList = List["Expr"]
-BranchParts = Union[ExprList, List[ExprList]]  #
+BranchParts = Union[ExprList, List[ExprList]]
 
 def decompose(node: Expr) -> Tuple[Optional[str], Optional[BranchParts]]:
     if isinstance(node, Bin):
