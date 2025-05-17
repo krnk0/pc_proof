@@ -14,4 +14,4 @@ dev = [
 ]
 [tool.setuptools]
 package-dir = {"" = "src"}
-py-modules = ["parser", "sequent", "tableau"]
+py-modules = ["parser", "sequent", "tableau", "viz"]
