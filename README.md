@@ -26,5 +26,16 @@ print(taut, model)
 prove_svg("p or not p", "proof")
 ```
 
+## CLI
+After installation the command `pc-proof` is available.
+
+```bash
+pc-proof "p or not p"
+pc-proof -m tableau "p and not p"
+pc-proof -o proof "p or not p"  # SVG for sequent proof
+```
+
+The `-o` option is only valid when using the sequent method.
+
 ## License
 MIT. See [LICENSE](LICENSE).
