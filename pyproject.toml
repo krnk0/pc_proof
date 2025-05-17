@@ -13,4 +13,5 @@ dev = [
   "pytest>=8.2"
 ]
 [tool.setuptools]
-py-modules = ["parser", "tableau", "sequent"]
+package-dir = {"" = "src"}
+py-modules = ["parser", "sequent", "tableau"]
