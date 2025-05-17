@@ -1,5 +1,0 @@
-lark>=1.2
-graphviz>=0.20
-
-[dev]
-pytest>=8.2
