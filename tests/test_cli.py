@@ -31,3 +31,17 @@ def test_cli_svg_output(tmp_path, capsys):
 def test_cli_tableau_output_error():
     with pytest.raises(SystemExit):
         cli.main(["-m", "tableau", "-o", "out", "p or p"])
+
+
+def test_cli_invalid_method(capsys):
+    with pytest.raises(SystemExit):
+        cli.main(["-m", "invalid", "p"])
+    err = capsys.readouterr().err
+    assert "invalid choice" in err
+
+
+def test_cli_tableau_output_error_message(capsys):
+    with pytest.raises(SystemExit):
+        cli.main(["-m", "tableau", "-o", "out", "p or p"])
+    err = capsys.readouterr().err
+    assert "SVG output is only supported with the sequent method" in err
