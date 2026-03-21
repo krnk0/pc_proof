@@ -8,7 +8,7 @@ fn is_literal(e: &Expr) -> bool {
 
 fn negate(e: &Expr) -> Expr {
     match e {
-        Expr::Const(b)                                => Expr::Const(!b),
+        Expr::Const(b) => Expr::Const(!b),
         Expr::Not(inner) if matches!(inner.as_ref(), Expr::Var(_)) => *inner.clone(),
         _ => Expr::Not(Box::new(e.clone())),
     }
@@ -16,8 +16,8 @@ fn negate(e: &Expr) -> Expr {
 
 #[derive(Debug)]
 enum Rule {
-    Alpha(Vec<Expr>),        // adds all to the same branch
-    Beta(Vec<Vec<Expr>>),    // creates one child branch per element
+    Alpha(Vec<Expr>),
+    Beta(Vec<Vec<Expr>>),
 }
 
 fn decompose(e: &Expr) -> Option<Rule> {
@@ -47,62 +47,57 @@ fn fmt_branch(formulas: &[Expr]) -> String {
     formulas.iter().map(|e| e.to_string()).collect::<Vec<_>>().join(", ")
 }
 
-/// `branch` は現在の枝にある式のリスト
-fn tableau_rec(mut branch: Vec<Expr>) -> ProofNode {
+/// リテラルのリストを変数割り当てに変換する
+fn literals_to_model(literals: &[Expr]) -> Model {
+    literals.iter().filter_map(|e| match e {
+        Expr::Var(name) => Some((name.clone(), true)),
+        Expr::Not(inner) => match inner.as_ref() {
+            Expr::Var(name) => Some((name.clone(), false)),
+            _ => None,
+        },
+        _ => None,
+    }).collect()
+}
+
+/// 証明木を構築する。
+/// 返り値: (ノード, 開いた枝のリテラル列)
+/// 開いた枝が存在する場合のみ Some(literals) を返す。
+fn tableau_rec(mut branch: Vec<Expr>) -> (ProofNode, Option<Vec<Expr>>) {
     // Not(Const) を正規化
-    branch = branch
-        .into_iter()
-        .map(|e| match e {
-            Expr::Not(inner) if matches!(inner.as_ref(), Expr::Const(_)) => {
-                if let Expr::Const(b) = *inner { Expr::Const(!b) } else { unreachable!() }
-            }
-            other => other,
-        })
-        .collect();
+    branch = branch.into_iter().map(|e| match e {
+        Expr::Not(inner) if matches!(inner.as_ref(), Expr::Const(_)) => {
+            if let Expr::Const(b) = *inner { Expr::Const(!b) } else { unreachable!() }
+        }
+        other => other,
+    }).collect();
 
     let label = fmt_branch(&branch);
 
     // ⊥ → closed
     if branch.iter().any(|e| matches!(e, Expr::Const(false))) {
-        return ProofNode::leaf(label, true);
+        return (ProofNode::leaf(label, true), None);
     }
-    // ⊤ → remove and continue
+    // ⊤ を除去して続行
     branch.retain(|e| !matches!(e, Expr::Const(true)));
 
-    let literals: Vec<&Expr> = branch.iter().filter(|e| is_literal(e)).collect();
-
-    // Contradiction among literals → closed
-    if literals.iter().any(|l| branch.contains(&negate(l))) {
-        return ProofNode::leaf(label, true);
+    // リテラル間の矛盾 → closed
+    let has_contradiction = branch.iter()
+        .filter(|e| is_literal(e))
+        .any(|l| branch.contains(&negate(l)));
+    if has_contradiction {
+        return (ProofNode::leaf(label, true), None);
     }
 
-    // All literals → open; extract model
+    // すべてリテラル → open。リテラル列をそのまま返す
     if branch.iter().all(is_literal) {
-        let model: Model = branch
-            .iter()
-            .filter_map(|e| match e {
-                Expr::Var(name) => Some((name.clone(), true)),
-                Expr::Not(inner) => {
-                    if let Expr::Var(name) = inner.as_ref() {
-                        Some((name.clone(), false))
-                    } else {
-                        None
-                    }
-                }
-                _ => None,
-            })
-            .collect();
-        // Store model in a global-like via a special leaf representation;
-        // we bubble it up via the return value separately.
-        let _ = model; // handled by the caller via collect_model
-        return ProofNode::leaf(label, false);
+        return (ProofNode::leaf(label, false), Some(branch));
     }
 
-    // Find an alpha rule first, then beta
+    // alpha 規則を優先して適用するノードを選ぶ
     let pos = branch.iter().position(|e| matches!(decompose(e), Some(Rule::Alpha(_))))
         .or_else(|| branch.iter().position(|e| matches!(decompose(e), Some(Rule::Beta(_)))));
-
     let pos = pos.expect("non-literal with no decomposition rule");
+
     let target = branch.remove(pos);
     let rest = branch;
 
@@ -110,12 +105,12 @@ fn tableau_rec(mut branch: Vec<Expr>) -> ProofNode {
         Rule::Alpha(additions) => {
             let mut new_branch = rest;
             new_branch.extend(additions);
-            let child = tableau_rec(new_branch);
+            let (child, open) = tableau_rec(new_branch);
             let closed = child.closed;
-            ProofNode::node(label, closed, vec![child])
+            (ProofNode::node(label, closed, vec![child]), open)
         }
         Rule::Beta(branches) => {
-            let children: Vec<ProofNode> = branches
+            let results: Vec<(ProofNode, Option<Vec<Expr>>)> = branches
                 .into_iter()
                 .map(|additions| {
                     let mut new_branch = rest.clone();
@@ -123,55 +118,34 @@ fn tableau_rec(mut branch: Vec<Expr>) -> ProofNode {
                     tableau_rec(new_branch)
                 })
                 .collect();
-            let closed = children.iter().all(|c| c.closed);
-            ProofNode::node(label, closed, children)
-        }
-    }
-}
 
-/// 開いた葉からモデルを収集する
-fn collect_model(node: &ProofNode, _branch_formulas: Option<&str>) -> Option<Model> {
-    if node.children.is_empty() && !node.closed {
-        // open leaf: parse label back into model
-        let model = node.label.split(", ").filter_map(|s| {
-            let s = s.trim();
-            if s.starts_with('¬') {
-                let name = s.trim_start_matches('¬');
-                Some((name.to_string(), false))
-            } else if !s.is_empty() && !matches!(s, "⊤" | "⊥") {
-                Some((s.to_string(), true))
-            } else {
-                None
-            }
-        }).collect();
-        return Some(model);
-    }
-    for child in &node.children {
-        if let Some(m) = collect_model(child, None) {
-            return Some(m);
+            // 最初に見つかった開いた枝のリテラルを代表として返す
+            let open = results.iter().find_map(|(_, o)| o.clone());
+            let closed = results.iter().all(|(n, _)| n.closed);
+            let children = results.into_iter().map(|(n, _)| n).collect();
+            (ProofNode::node(label, closed, children), open)
         }
     }
-    None
 }
 
 pub fn check_tautology(expr: &Expr) -> TautologyOutcome {
     // ¬φ が充足不能 ⟺ φ は恒真式
     let negated = Expr::Not(Box::new(expr.clone()));
-    let tree = tableau_rec(vec![negated]);
+    let (tree, open) = tableau_rec(vec![negated]);
     if tree.closed {
         TautologyOutcome::Proved { tree }
     } else {
-        let model = collect_model(&tree, None).unwrap_or_default();
+        let model = open.as_deref().map(literals_to_model).unwrap_or_default();
         TautologyOutcome::Refuted { tree, model }
     }
 }
 
 pub fn check_satisfiable(expr: &Expr) -> SatOutcome {
-    let tree = tableau_rec(vec![expr.clone()]);
+    let (tree, open) = tableau_rec(vec![expr.clone()]);
     if tree.closed {
         SatOutcome::Unsatisfiable { tree }
     } else {
-        let model = collect_model(&tree, None).unwrap_or_default();
+        let model = open.as_deref().map(literals_to_model).unwrap_or_default();
         SatOutcome::Satisfiable { tree, model }
     }
 }
