@@ -1,5 +1,5 @@
 use crate::ast::{BinOp, Expr};
-use crate::proof::{Model, Outcome, ProofNode};
+use crate::proof::{Model, TautologyOutcome, SatOutcome, ProofNode};
 
 fn is_literal(e: &Expr) -> bool {
     matches!(e, Expr::Var(_) | Expr::Const(_))
@@ -154,26 +154,24 @@ fn collect_model(node: &ProofNode, _branch_formulas: Option<&str>) -> Option<Mod
     None
 }
 
-pub fn check_tautology(expr: &Expr) -> Outcome {
-    // Negate the formula; if the negation is unsatisfiable → tautology
+pub fn check_tautology(expr: &Expr) -> TautologyOutcome {
+    // ¬φ が充足不能 ⟺ φ は恒真式
     let negated = Expr::Not(Box::new(expr.clone()));
     let tree = tableau_rec(vec![negated]);
     if tree.closed {
-        Outcome::Tautology { tree }
+        TautologyOutcome::Proved { tree }
     } else {
         let model = collect_model(&tree, None).unwrap_or_default();
-        Outcome::Refuted { tree, model }
+        TautologyOutcome::Refuted { tree, model }
     }
 }
 
-pub fn check_satisfiable(expr: &Expr) -> Outcome {
+pub fn check_satisfiable(expr: &Expr) -> SatOutcome {
     let tree = tableau_rec(vec![expr.clone()]);
     if tree.closed {
-        // unsatisfiable → treat as "refuted" (no model)
-        Outcome::Refuted { tree, model: Default::default() }
+        SatOutcome::Unsatisfiable { tree }
     } else {
-        let _model = collect_model(&tree, None).unwrap_or_default();
-        // "Tautology" slot reused to mean "satisfiable witness found"
-        Outcome::Tautology { tree }
+        let model = collect_model(&tree, None).unwrap_or_default();
+        SatOutcome::Satisfiable { tree, model }
     }
 }

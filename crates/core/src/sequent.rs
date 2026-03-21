@@ -1,5 +1,5 @@
 use crate::ast::{BinOp, Expr};
-use crate::proof::{Outcome, ProofNode};
+use crate::proof::{TautologyOutcome, ProofNode};
 
 fn fmt_sequent(left: &[Expr], right: &[Expr]) -> String {
     let l = left.iter().map(|e| e.to_string()).collect::<Vec<_>>().join(", ");
@@ -123,12 +123,12 @@ fn prove_rec(left: Vec<Expr>, right: Vec<Expr>) -> ProofNode {
     ProofNode::leaf(label, false)
 }
 
-pub fn check_tautology(expr: &Expr) -> Outcome {
+pub fn check_tautology(expr: &Expr) -> TautologyOutcome {
     let tree = prove_rec(vec![], vec![expr.clone()]);
     if tree.closed {
-        Outcome::Tautology { tree }
+        TautologyOutcome::Proved { tree }
     } else {
-        // sequent は反例モデルを生成しない（tableau が担当）
-        Outcome::Refuted { tree, model: Default::default() }
+        // sequent は反例モデルを生成しない（反例が必要なら tableau を使う）
+        TautologyOutcome::Refuted { tree, model: Default::default() }
     }
 }

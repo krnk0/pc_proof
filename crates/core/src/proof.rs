@@ -3,18 +3,33 @@ use serde::Serialize;
 
 pub type Model = HashMap<String, bool>;
 
-/// 証明器が返す結果
+/// `check_tautology` の結果
 #[derive(Debug, Serialize)]
-pub enum Outcome {
-    /// 恒真式（証明成功）
-    Tautology { tree: ProofNode },
-    /// 反例あり
+pub enum TautologyOutcome {
+    /// 証明成功
+    Proved { tree: ProofNode },
+    /// 反例あり（model が反例を与える変数割り当て）
     Refuted { tree: ProofNode, model: Model },
 }
 
-impl Outcome {
+impl TautologyOutcome {
     pub fn is_tautology(&self) -> bool {
-        matches!(self, Outcome::Tautology { .. })
+        matches!(self, TautologyOutcome::Proved { .. })
+    }
+}
+
+/// `check_satisfiable` の結果
+#[derive(Debug, Serialize)]
+pub enum SatOutcome {
+    /// 充足可能（model が充足する変数割り当て）
+    Satisfiable { tree: ProofNode, model: Model },
+    /// 充足不能
+    Unsatisfiable { tree: ProofNode },
+}
+
+impl SatOutcome {
+    pub fn is_satisfiable(&self) -> bool {
+        matches!(self, SatOutcome::Satisfiable { .. })
     }
 }
 

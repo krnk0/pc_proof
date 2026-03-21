@@ -1,4 +1,4 @@
-use crate::{parser::parse, proof::Outcome, sequent, tableau};
+use crate::{parser::parse, proof::TautologyOutcome, sequent, tableau};
 
 // ---------- Parser ----------
 
@@ -82,6 +82,11 @@ fn is_tautology_tableau(s: &str) -> bool {
     tableau::check_tautology(&e).is_tautology()
 }
 
+fn is_satisfiable_tableau(s: &str) -> bool {
+    let e = parse(s).unwrap();
+    tableau::check_satisfiable(&e).is_satisfiable()
+}
+
 #[test]
 fn tableau_tautologies() {
     assert!(is_tautology_tableau("p or not p"));
@@ -104,7 +109,7 @@ fn tableau_non_tautologies() {
 fn tableau_counterexample() {
     let e = parse("p -> q").unwrap();
     match tableau::check_tautology(&e) {
-        Outcome::Refuted { model, .. } => {
+        TautologyOutcome::Refuted { model, .. } => {
             // model must falsify p -> q  i.e.  p=true, q=false
             assert_eq!(model.get("p"), Some(&true));
             assert_eq!(model.get("q"), Some(&false));
@@ -136,6 +141,30 @@ fn sequent_non_tautologies() {
     assert!(!is_tautology_sequent("p"));
     assert!(!is_tautology_sequent("p and not p"));
     assert!(!is_tautology_sequent("p -> q"));
+}
+
+// ---------- Satisfiability ----------
+
+#[test]
+fn tableau_satisfiable() {
+    assert!(is_satisfiable_tableau("p and q"));
+    assert!(is_satisfiable_tableau("p -> q"));
+    assert!(is_satisfiable_tableau("p or q"));
+    assert!(!is_satisfiable_tableau("p and not p"));
+    assert!(!is_satisfiable_tableau("⊥"));
+}
+
+#[test]
+fn tableau_satisfiable_model() {
+    use crate::proof::SatOutcome;
+    let e = parse("p and q").unwrap();
+    match tableau::check_satisfiable(&e) {
+        SatOutcome::Satisfiable { model, .. } => {
+            assert_eq!(model.get("p"), Some(&true));
+            assert_eq!(model.get("q"), Some(&true));
+        }
+        _ => panic!("expected satisfiable"),
+    }
 }
 
 // ---------- Tableau と Sequent の一致 ----------
