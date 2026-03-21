@@ -70,21 +70,20 @@ fn tableau_rec(mut branch: Vec<Expr>) -> (ProofNode, Option<Vec<Expr>>) {
         other => other,
     }).collect();
 
-    let label = fmt_branch(&branch);
-
     if branch.iter().any(|e| matches!(e, Expr::Const(false))) {
-        return (ProofNode::axiom(label, "⊥"), None);
+        return (ProofNode::axiom("⊥".to_string(), "⊥"), None);
     }
     branch.retain(|e| !matches!(e, Expr::Const(true)));
 
-    let has_contradiction = branch.iter()
-        .filter(|e| is_literal(e))
-        .any(|l| branch.contains(&negate(l)));
-    if has_contradiction {
-        return (ProofNode::axiom(label, "Ax"), None);
+    // 矛盾している literal ペアを探す
+    if let Some(l) = branch.iter().filter(|e| is_literal(e)).find(|l| branch.contains(&negate(l))) {
+        let ax_label = format!("{}, {}", l, negate(l));
+        return (ProofNode::axiom(ax_label, "Ax"), None);
     }
 
+    // 全部 literal → 開いた葉（反例）
     if branch.iter().all(is_literal) {
+        let label = fmt_branch(&branch);
         return (ProofNode::leaf(label, false), Some(branch));
     }
 
@@ -94,6 +93,7 @@ fn tableau_rec(mut branch: Vec<Expr>) -> (ProofNode, Option<Vec<Expr>>) {
 
     let target = branch.remove(pos);
     let rest = branch;
+    let label = target.to_string();  // Smullyan スタイル：分解対象の式だけ
 
     match decompose(&target).unwrap() {
         Rule::Alpha(additions, rule) => {

@@ -1,22 +1,16 @@
 import { createSignal, onMount, Show } from 'solid-js'
 import initWasm, { tableau_tautology, sequent_tautology } from 'pc_proof_wasm'
-
-type ProofNode = {
-  label: string
-  closed: boolean
-  children: ProofNode[]
-  rule: string | null
-}
+import { ProofTree, ProofNodeData } from './ProofTree'
 
 type TautologyOutcome =
-  | { Proved: { tree: ProofNode } }
-  | { Refuted: { tree: ProofNode; model: Record<string, boolean> } }
+  | { Proved: { tree: ProofNodeData } }
+  | { Refuted: { tree: ProofNodeData; model: Record<string, boolean> } }
 
 function formatCounterexample(model: Record<string, boolean>): string {
   return Object.entries(model)
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([k, v]) => `${k}=${v}`)
-    .join(', ')
+    .map(([k, v]) => `${k} = ${v}`)
+    .join(',  ')
 }
 
 export default function App() {
@@ -46,55 +40,68 @@ export default function App() {
   }
 
   return (
-    <div style={{ "max-width": "640px", margin: "40px auto", "font-family": "monospace", padding: "0 16px" }}>
-      <h1 style={{ "font-size": "1.4rem", "margin-bottom": "24px" }}>pc-proof</h1>
+    <div style={{ "max-width": "860px", margin: "40px auto", "font-family": "system-ui, sans-serif", padding: "0 16px" }}>
+      <h1 style={{ "font-size": "1.4rem", "margin-bottom": "8px" }}>pc-proof</h1>
+      <p style={{ color: '#888', "font-size": '0.85rem', "margin-bottom": "24px" }}>Propositional logic tautology checker</p>
 
-      <div style={{ "margin-bottom": "12px" }}>
+      <div style={{ display: 'flex', gap: '8px', "margin-bottom": "12px" }}>
         <input
           type="text"
           value={formula()}
           onInput={e => setFormula(e.currentTarget.value)}
           onKeyDown={e => e.key === 'Enter' && check()}
           placeholder="e.g. p or not p"
-          style={{ width: "100%", padding: "8px", "font-family": "monospace", "font-size": "1rem", "box-sizing": "border-box" }}
+          style={{ flex: 1, padding: "8px 12px", "font-family": "monospace", "font-size": "1rem", border: "1px solid #ddd", "border-radius": "4px" }}
           disabled={!ready()}
         />
-      </div>
-
-      <div style={{ "margin-bottom": "12px", display: "flex", gap: "16px", "align-items": "center" }}>
-        <label>
-          <input type="radio" name="method" value="tableau" checked={method() === 'tableau'} onChange={() => setMethod('tableau')} />
-          {' '}tableau
-        </label>
-        <label>
-          <input type="radio" name="method" value="sequent" checked={method() === 'sequent'} onChange={() => setMethod('sequent')} />
-          {' '}sequent
-        </label>
-        <button onClick={check} disabled={!ready()} style={{ "margin-left": "auto", padding: "6px 16px", cursor: "pointer" }}>
+        <button
+          onClick={check}
+          disabled={!ready()}
+          style={{ padding: "8px 20px", cursor: "pointer", "border-radius": "4px", border: "none", background: "#333", color: "#fff", "font-size": "1rem" }}
+        >
           Check
         </button>
       </div>
 
+      <div style={{ "margin-bottom": "20px", display: "flex", gap: "20px", "font-size": "0.9rem" }}>
+        <label style={{ cursor: "pointer" }}>
+          <input type="radio" name="method" checked={method() === 'tableau'} onChange={() => setMethod('tableau')} />
+          {' '}Tableau
+        </label>
+        <label style={{ cursor: "pointer" }}>
+          <input type="radio" name="method" checked={method() === 'sequent'} onChange={() => setMethod('sequent')} />
+          {' '}Sequent calculus
+        </label>
+      </div>
+
       <Show when={error()}>
-        <pre style={{ color: "red" }}>{error()}</pre>
+        <pre style={{ color: "#c00", background: "#fff0f0", padding: "12px", "border-radius": "4px", "font-size": "0.85rem" }}>
+          {error()}
+        </pre>
       </Show>
 
       <Show when={result()} keyed>
         {outcome => (
-          <div style={{ "margin-top": "16px" }}>
-            {'Proved' in outcome
-              ? <span style={{ color: "green", "font-size": "1.2rem" }}>✓ Tautology</span>
-              : (
-                <div>
-                  <span style={{ color: "red", "font-size": "1.2rem" }}>✗ Not a tautology</span>
-                  {'Refuted' in outcome && Object.keys(outcome.Refuted.model).length > 0 && (
-                    <div style={{ "margin-top": "8px", color: "#555" }}>
-                      Counterexample: {formatCounterexample(outcome.Refuted.model)}
-                    </div>
-                  )}
+          <div>
+            {'Proved' in outcome ? (
+              <>
+                <div style={{ "font-size": "1.2rem", color: "#2e7d32", "margin-bottom": "16px" }}>
+                  ✓ Tautology
                 </div>
-              )
-            }
+                <ProofTree node={outcome.Proved.tree} />
+              </>
+            ) : (
+              <div>
+                <div style={{ "font-size": "1.2rem", color: "#c62828", "margin-bottom": "8px" }}>
+                  ✗ Not a tautology
+                </div>
+                <Show when={Object.keys(outcome.Refuted.model).length > 0}>
+                  <div style={{ "font-family": "monospace", color: "#555", "font-size": "0.95rem" }}>
+                    Counterexample: {formatCounterexample(outcome.Refuted.model)}
+                  </div>
+                </Show>
+              </div>
+            )}
           </div>
         )}
       </Show>
