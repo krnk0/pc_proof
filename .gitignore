@@ -4,3 +4,4 @@ pc_proof.egg-info/
 src/pc_proof.egg-info/
 .venv/
 PLAN.md
+/target/
