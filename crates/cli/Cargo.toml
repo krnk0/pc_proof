@@ -1,0 +1,12 @@
+[package]
+name = "pc-proof"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "pc-proof"
+path = "src/main.rs"
+
+[dependencies]
+pc_proof_core = { path = "../core" }
+clap = { version = "4", features = ["derive"] }
