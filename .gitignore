@@ -5,3 +5,7 @@ src/pc_proof.egg-info/
 .venv/
 PLAN.md
 /target/
+/pkg/
+/frontend/pkg/
+/frontend/node_modules/
+/frontend/dist/
