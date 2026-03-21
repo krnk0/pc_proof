@@ -8,9 +8,6 @@ from parser import parse, Var, Const, Not, Bin, Expr
 from sequent import is_literal
 
 
-_counter = count()
-
-
 def _fmt(expr: Expr) -> str:
     if isinstance(expr, Var):
         return expr.name
@@ -30,8 +27,8 @@ def _fmt_list(lst: List[Expr]) -> str:
     return ", ".join(_fmt(e) for e in lst)
 
 
-def _prove_graph(left: List[Expr], right: List[Expr], g: Digraph) -> Tuple[bool, str]:
-    node_id = str(next(_counter))
+def _prove_graph(left: List[Expr], right: List[Expr], g: Digraph, counter=None) -> Tuple[bool, str]:
+    node_id = str(next(counter))
     label = f"{_fmt_list(left)} |- {_fmt_list(right)}"
     g.node(node_id, label=label)
 
@@ -63,27 +60,27 @@ def _prove_graph(left: List[Expr], right: List[Expr], g: Digraph) -> Tuple[bool,
             continue
         rest = left[:i] + left[i + 1 :]
         if isinstance(e, Not):
-            res, child = _prove_graph(rest, right + [e.expr], g)
+            res, child = _prove_graph(rest, right + [e.expr], g, counter)
             g.edge(node_id, child)
             g.node(node_id, label=label, color="green" if res else "red")
             return res, node_id
         if isinstance(e, Bin):
             if e.op == "AND":
-                res, child = _prove_graph(rest + [e.left, e.right], right, g)
+                res, child = _prove_graph(rest + [e.left, e.right], right, g, counter)
                 g.edge(node_id, child)
                 g.node(node_id, label=label, color="green" if res else "red")
                 return res, node_id
             if e.op == "OR":
-                r1, c1 = _prove_graph(rest + [e.left], right, g)
-                r2, c2 = _prove_graph(rest + [e.right], right, g)
+                r1, c1 = _prove_graph(rest + [e.left], right, g, counter)
+                r2, c2 = _prove_graph(rest + [e.right], right, g, counter)
                 g.edge(node_id, c1)
                 g.edge(node_id, c2)
                 res = r1 and r2
                 g.node(node_id, label=label, color="green" if res else "red")
                 return res, node_id
             if e.op == "IMPL":
-                r1, c1 = _prove_graph(rest, right + [e.left], g)
-                r2, c2 = _prove_graph(rest + [e.right], right, g)
+                r1, c1 = _prove_graph(rest, right + [e.left], g, counter)
+                r2, c2 = _prove_graph(rest + [e.right], right, g, counter)
                 g.edge(node_id, c1)
                 g.edge(node_id, c2)
                 res = r1 and r2
@@ -96,26 +93,26 @@ def _prove_graph(left: List[Expr], right: List[Expr], g: Digraph) -> Tuple[bool,
             continue
         rest = right[:i] + right[i + 1 :]
         if isinstance(e, Not):
-            res, child = _prove_graph(left + [e.expr], rest, g)
+            res, child = _prove_graph(left + [e.expr], rest, g, counter)
             g.edge(node_id, child)
             g.node(node_id, label=label, color="green" if res else "red")
             return res, node_id
         if isinstance(e, Bin):
             if e.op == "AND":
-                r1, c1 = _prove_graph(left, rest + [e.left], g)
-                r2, c2 = _prove_graph(left, rest + [e.right], g)
+                r1, c1 = _prove_graph(left, rest + [e.left], g, counter)
+                r2, c2 = _prove_graph(left, rest + [e.right], g, counter)
                 g.edge(node_id, c1)
                 g.edge(node_id, c2)
                 res = r1 and r2
                 g.node(node_id, label=label, color="green" if res else "red")
                 return res, node_id
             if e.op == "OR":
-                res, child = _prove_graph(left, rest + [e.left, e.right], g)
+                res, child = _prove_graph(left, rest + [e.left, e.right], g, counter)
                 g.edge(node_id, child)
                 g.node(node_id, label=label, color="green" if res else "red")
                 return res, node_id
             if e.op == "IMPL":
-                res, child = _prove_graph(left + [e.left], rest + [e.right], g)
+                res, child = _prove_graph(left + [e.left], rest + [e.right], g, counter)
                 g.edge(node_id, child)
                 g.node(node_id, label=label, color="green" if res else "red")
                 return res, node_id
@@ -128,7 +125,7 @@ def prove_svg(text: str, outfile: str) -> bool:
     """Prove ``text`` and save the proof tree as SVG to ``outfile``."""
     ast = parse(text)
     g = Digraph(format="svg")
-    res, root = _prove_graph([], [ast], g)
+    res, root = _prove_graph([], [ast], g, count())
     g.render(outfile, format="svg", cleanup=True)
     return res
 

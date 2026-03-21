@@ -22,7 +22,7 @@ def eval_ast(node, env):
     "not not p -> p",
     "⊤",
     "not ⊥",
-#    "not (p and q) -> (not p or not q)",
+    "not (p and q) -> (not p or not q)",
 ])
 def test_tautology(expr):
     taut, _ = solve(expr, tautology=True)
