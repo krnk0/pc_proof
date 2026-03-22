@@ -187,8 +187,8 @@ export default function App() {
 
       {/* Syntax hint */}
       <div style={{ 'font-size': '0.78rem', color: '#bbb', 'margin-bottom': '16px', 'font-family': 'monospace' }}>
-        {(['and', 'or', 'not', '->', '<->'] as const).map((op, i) => (
-          <><span style={{ background: '#f5f5f5', padding: '1px 5px', 'border-radius': '3px', color: '#888' }}>{op}</span>{i < 4 ? '  ' : ''}</>
+        {(['and', 'or', 'not', '->'] as const).map((op, i) => (
+          <><span style={{ background: '#f5f5f5', padding: '1px 5px', 'border-radius': '3px', color: '#888' }}>{op}</span>{i < 3 ? '  ' : ''}</>
         ))}
       </div>
 
@@ -227,10 +227,13 @@ export default function App() {
               <div>
                 <div style={{ 'font-size': '1.1rem', color: '#c62828', 'margin-bottom': '8px' }}>✗ Not a tautology</div>
                 <Show when={Object.keys(outcome.Refuted.model).length > 0}>
-                  <div style={{ 'font-family': 'monospace', color: '#666', 'font-size': '0.92rem' }}>
+                  <div style={{ 'font-family': 'monospace', color: '#666', 'font-size': '0.92rem', 'margin-bottom': '16px' }}>
                     Counterexample: {formatCounterexample(outcome.Refuted.model)}
                   </div>
                 </Show>
+                {method() === 'sequent'
+                  ? <SequentDerivation node={outcome.Refuted.tree} />
+                  : <ProofTree node={outcome.Refuted.tree} />}
               </div>
             )}
           </div>

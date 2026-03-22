@@ -256,6 +256,80 @@ fn sequent_non_tautologies() {
     assert!(!is_tautology_sequent("not p"));
 }
 
+// ---------- 反駁木の構造 ----------
+
+fn count_open_leaves(node: &crate::proof::ProofNode) -> usize {
+    if node.children.is_empty() {
+        if !node.closed { 1 } else { 0 }
+    } else {
+        node.children.iter().map(count_open_leaves).sum()
+    }
+}
+
+#[test]
+fn tableau_refuted_tree_not_closed() {
+    for s in ["p", "p -> q", "p or q", "p and q -> r"] {
+        let expr = parse(s).unwrap();
+        match tableau::check_tautology(&expr) {
+            TautologyOutcome::Refuted { tree, .. } => {
+                assert!(!tree.closed, "{s:?} の反駁木の根が closed になっている");
+                assert!(
+                    count_open_leaves(&tree) >= 1,
+                    "{s:?} の反駁木に開いた葉がない"
+                );
+            }
+            TautologyOutcome::Proved { .. } => panic!("{s:?} は非恒真のはず"),
+        }
+    }
+}
+
+#[test]
+fn tableau_refuted_tree_root_label() {
+    // tableau は ¬φ を根にして展開する
+    let expr = parse("p -> q").unwrap();
+    match tableau::check_tautology(&expr) {
+        TautologyOutcome::Refuted { tree, .. } => {
+            assert!(
+                tree.label.contains('→') || tree.label.contains("->"),
+                "根ラベルに元の式が含まれていない: {:?}", tree.label
+            );
+        }
+        _ => panic!(),
+    }
+}
+
+#[test]
+fn sequent_refuted_tree_not_closed() {
+    for s in ["p", "p -> q", "p or q"] {
+        let expr = parse(s).unwrap();
+        match sequent::check_tautology(&expr) {
+            TautologyOutcome::Refuted { tree, .. } => {
+                assert!(!tree.closed, "{s:?} の sequent 反駁木の根が closed になっている");
+                assert!(
+                    count_open_leaves(&tree) >= 1,
+                    "{s:?} の sequent 反駁木に開いた葉がない"
+                );
+            }
+            TautologyOutcome::Proved { .. } => panic!("{s:?} は非恒真のはず"),
+        }
+    }
+}
+
+#[test]
+fn sequent_refuted_tree_root_label() {
+    // sequent は ⊢ φ を根にする
+    let expr = parse("p -> q").unwrap();
+    match sequent::check_tautology(&expr) {
+        TautologyOutcome::Refuted { tree, .. } => {
+            assert!(
+                tree.label.contains('⊢'),
+                "根ラベルに ⊢ が含まれていない: {:?}", tree.label
+            );
+        }
+        _ => panic!(),
+    }
+}
+
 // ---------- Tableau と Sequent の一致 ----------
 
 #[test]
