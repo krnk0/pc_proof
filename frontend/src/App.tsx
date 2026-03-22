@@ -1,6 +1,6 @@
 import { createSignal, onMount, Show } from 'solid-js'
 import initWasm, { tableau_tautology, sequent_tautology } from 'pc_proof_wasm'
-import { ProofTree, ProofNodeData } from './ProofTree'
+import { ProofTree, SequentDerivation, ProofNodeData } from './ProofTree'
 
 type TautologyOutcome =
   | { Proved: { tree: ProofNodeData } }
@@ -128,7 +128,7 @@ export default function App() {
 
   const segBtn = (m: 'tableau' | 'sequent', label: string) => (
     <button
-      onClick={() => setMethod(m)}
+      onClick={() => { setMethod(m); setResult(null); setError(null) }}
       disabled={!ready()}
       style={{
         padding: '6px 18px',
@@ -218,7 +218,10 @@ export default function App() {
             {'Proved' in outcome ? (
               <>
                 <div style={{ 'font-size': '1.1rem', color: '#2e7d32', 'margin-bottom': '16px' }}>✓ Tautology</div>
-                <ProofTree node={outcome.Proved.tree} />
+                {method() === 'sequent'
+                  ? <SequentDerivation node={outcome.Proved.tree} />
+                  : <ProofTree node={outcome.Proved.tree} />}
+
               </>
             ) : (
               <div>
